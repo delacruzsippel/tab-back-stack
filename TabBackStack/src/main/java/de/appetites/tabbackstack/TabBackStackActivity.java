@@ -11,32 +11,28 @@ import android.util.SparseArray;
 
 public abstract class TabBackStackActivity extends Activity implements ActionBar.TabListener {
 
-    private static final String TAG = "TabFragments";
+    private static final String TAG = "TabBackStackActivity";
     protected ActionBar mActionBar;
-    SparseArray<FragmentBackStack> mTabBackStacks;
+    protected SparseArray<FragmentBackStack> mTabBackStacks;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        mActionBar = getActionBar();
+
         if (savedInstanceState != null) {
             mTabBackStacks = savedInstanceState.getSparseParcelableArray("TAB_STACKS");
-            for (int i = 0; i < mTabBackStacks.size(); i++) {
-                mTabBackStacks.get(i).recreateBackStack(this);
+            if (mTabBackStacks != null) {
+                for (int i = 0; i < mTabBackStacks.size(); i++) {
+                    mTabBackStacks.get(i).recreateBackStack(this);
+                }
             }
         } else if (mTabBackStacks == null) {
             mTabBackStacks = new SparseArray<FragmentBackStack>();
             for (int i = 0; i < 4; i++) {
-                FragmentBackStack fragmentBackStack = new FragmentBackStack();
-                mTabBackStacks.append(i, fragmentBackStack);
+                mTabBackStacks.append(i, new FragmentBackStack());
             }
         }
-        mActionBar = getActionBar();
-//        // create tabs
-//        mActionBar.setNavigationMode(ActionBar.NAVIGATION_MODE_TABS);
-//        mActionBar.addTab(mActionBar.newTab().setText("Tab 1").setTabListener(this));
-//        mActionBar.addTab(mActionBar.newTab().setText("Tab 2").setTabListener(this));
-//        mActionBar.addTab(mActionBar.newTab().setText("Tab 3").setTabListener(this));
-//        mActionBar.addTab(mActionBar.newTab().setText("Tab 4").setTabListener(this));
     }
 
     @Override
@@ -51,40 +47,65 @@ public abstract class TabBackStackActivity extends Activity implements ActionBar
      * @param fragment Fragment to push and display
      */
     public void push(Fragment fragment) {
-        int position = mActionBar.getSelectedTab().getPosition();
-        FragmentBackStack fragmentBackStack = mTabBackStacks.get(position);
-        FragmentTransaction fragmentTransaction = getFragmentManager().beginTransaction();
-        fragmentBackStack.push(fragment, fragmentTransaction, getContainerId());
-        fragmentTransaction.commit();
+        ActionBar.Tab selectedTab = mActionBar.getSelectedTab();
+        if (selectedTab != null) {
+            int position = selectedTab.getPosition();
+            FragmentBackStack fragmentBackStack = mTabBackStacks.get(position);
+            FragmentTransaction fragmentTransaction = getFragmentManager().beginTransaction();
+            fragmentBackStack.push(fragment, fragmentTransaction, getContainerId());
+            fragmentTransaction.commit();
+        }
     }
 
+    /**
+     * Returns the id of the container used for replacing the tab bars fragments.
+     * NEEDS TO BE IMPLEMENTED AND RETURN A VALID CONTAINER ID
+     *
+     * @return id of the container
+     */
     public abstract int getContainerId();
 
     /**
-     * * Pops the top most fragment from the current tab, removes it from the backstack
+     * Pops the top most fragment from the current tab, removes it from the backstack
      * and displays the last fragment in the changed backstack
      *
      * @return true if the fragment could be popped, false if the backstack only has one element left
      */
     public boolean pop() {
-        int position = mActionBar.getSelectedTab().getPosition();
-        FragmentBackStack fragmentBackStack = mTabBackStacks.get(position);
+        ActionBar.Tab selectedTab = mActionBar.getSelectedTab();
+        if (selectedTab != null) {
+            int position = selectedTab.getPosition();
+            FragmentBackStack fragmentBackStack = mTabBackStacks.get(position);
 
-        if (fragmentBackStack.size() > 1) {
-            fragmentBackStack.pop(getFragmentManager());
+            if (fragmentBackStack.size() > 1) {
+                // Pop last fragment from stack
+                fragmentBackStack.pop();
 
-            FragmentTransaction fragmentTransaction = getFragmentManager().beginTransaction();
-            fragmentTransaction.replace(getContainerId(), fragmentBackStack.getCurrent(getFragmentManager()));
-            fragmentTransaction.commit();
-            return true;
+                // Replace current fragment with the last fragment in the stack
+                FragmentTransaction fragmentTransaction = getFragmentManager().beginTransaction();
+                fragmentTransaction.replace(getContainerId(), fragmentBackStack.getCurrent());
+                fragmentTransaction.commit();
+
+                return true;
+            } else {
+                return false;
+            }
         } else {
             return false;
         }
-
     }
 
     /**
-     * Pops the current fragment of the curren tab if back is pressed
+     * Returns the FragmentBackStack for the given tab position
+     * @param tabPosition The tabs position whose backstack shall be fetched
+     * @return The backstack for the given tab position
+     */
+    public FragmentBackStack getBackStackForTab(int tabPosition) {
+        return mTabBackStacks.get(tabPosition);
+    }
+
+    /**
+     * Pops the current fragment of the current tab if back is pressed
      */
     @Override
     public void onBackPressed() {
@@ -95,26 +116,26 @@ public abstract class TabBackStackActivity extends Activity implements ActionBar
 
     @Override
     public void onTabSelected(ActionBar.Tab tab, FragmentTransaction fragmentTransaction) {
-        Fragment fragment = null;
+        Fragment fragment;
 
         // get current tab position and retrieve the backstack
         int position = tab.getPosition();
         FragmentBackStack fragmentBackStack = mTabBackStacks.get(position);
 
-        // if backstack empty init a dummy fragment else get last fragment of back stack
+        // if backstack is empty call initTab to get initial fragment
         if (fragmentBackStack.size() == 0) {
             // init tab
             fragment = initTab(position);
         } else {
             // display last fragment of backstack
-            fragment = fragmentBackStack.getCurrent(getFragmentManager());
+            fragment = fragmentBackStack.getCurrent();
         }
 
-        // replace current fragment with the new fragment to display
+        // replace current fragment with the new fragment
         if (fragment != null) {
             fragmentBackStack.push(fragment, fragmentTransaction, getContainerId());
         } else {
-            Log.e(TAG, "Error replacing fragment", new RuntimeException("Could not replace fragment, new fragment must not be null"));
+            Log.e(TAG, "Could not replace fragment, new fragment must not be null", new NullPointerException());
         }
     }
 

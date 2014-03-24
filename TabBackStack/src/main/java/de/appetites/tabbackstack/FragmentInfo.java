@@ -6,11 +6,9 @@ import android.os.Parcelable;
 
 /**
  * Created by appetites.de on 24.03.2014.
+ * Helper class to save and restore a fragment.
  */
 public class FragmentInfo implements Parcelable {
-    public String className;
-    public Bundle arguments;
-
     public static final Creator<FragmentInfo> CREATOR
             = new Creator<FragmentInfo>() {
         public FragmentInfo createFromParcel(Parcel in) {
@@ -21,6 +19,8 @@ public class FragmentInfo implements Parcelable {
             return new FragmentInfo[size];
         }
     };
+    public String className;
+    public Bundle arguments;
 
     public FragmentInfo(Parcel in) {
         className = in.readString();
