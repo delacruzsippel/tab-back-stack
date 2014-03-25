@@ -148,6 +148,12 @@ public abstract class TabBackStackActivity extends Activity implements ActionBar
 
     @Override
     public void onTabReselected(ActionBar.Tab tab, FragmentTransaction fragmentTransaction) {
-
+        // get current tab position and retrieve the backstack
+        int position = tab.getPosition();
+        FragmentBackStack fragmentBackStack = mTabBackStacks.get(position);
+        if(fragmentBackStack.size() > 1) {
+            // replace current fragment with the root fragment
+            fragmentBackStack.push(fragmentBackStack.popToRoot(), fragmentTransaction, getContainerId());
+        }
     }
 }

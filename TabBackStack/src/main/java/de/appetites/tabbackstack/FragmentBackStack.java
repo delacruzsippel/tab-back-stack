@@ -73,6 +73,28 @@ public class FragmentBackStack implements Parcelable {
     }
 
     /**
+     * Pops all fragments till the give position
+     * @param position The position of the last fragment that shall not be popped
+     * @return The new last fragment of the stack
+     */
+    public Fragment popToPosition(int position){
+        if(position > 0 && position < mFragments.size()) {
+            mFragments.setSize(position);
+        }
+        return mFragments.peek();
+    }
+
+    /**
+     * Pops the backstack to the root fragment
+     *
+     * @return The root fragment
+     */
+    public Fragment popToRoot(){
+        mFragments.setSize(1);
+        return mFragments.peek();
+    }
+
+    /**
      * Get the last fragment on the back stack.
      *
      * @return The last fragment.
